@@ -1,6 +1,0 @@
-/home/troiss/mini-dnn-cpp/build/CMakeFiles/demo.dir
-/home/troiss/mini-dnn-cpp/build/CMakeFiles/edit_cache.dir
-/home/troiss/mini-dnn-cpp/build/CMakeFiles/rebuild_cache.dir
-/home/troiss/mini-dnn-cpp/build/src/CMakeFiles/MiniDNNLib.dir
-/home/troiss/mini-dnn-cpp/build/src/CMakeFiles/edit_cache.dir
-/home/troiss/mini-dnn-cpp/build/src/CMakeFiles/rebuild_cache.dir
