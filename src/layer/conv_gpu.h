@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "../layer.h"
-
+#include "../cuda_runtime.h"
 class Conv: public Layer {
  private:
   const int dim_in;

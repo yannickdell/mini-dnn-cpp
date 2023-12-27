@@ -1,5 +1,7 @@
 #include "conv_gpu.h"
 #include "conv_gpu.cuh"
+#include <stdio.h>
+#include <stdint.h>
 
 // Declare and define your CUDA kernels here
 __global__ void forward_kernel(/* parameters */) {
@@ -27,40 +29,30 @@ void Conv::im2col(const Vector& image, Matrix& data_col) {
     // Free GPU memory
 }
 
-__global__ void GPUConvolutionKernel(uchar3 * inPixels, int width, int height, 
-		float * filter, int filterWidth, 
-		uchar3 * outPixels)
+__global__ void GPUConvolutionKernel(int* inPixels, int* outPixels, int height_in, int width_in,
+	int height_kernel, int width_kernel, float* weight_kernel)
 {
-	// TODO
 	int r = blockIdx.x * blockDim.x + threadIdx.x;
 	int c = blockIdx.y * blockDim.y + threadIdx.y;
-	int padding = filterWidth / 2;
-	int i = r * width + c;
+	int padding = width_kernel / 2;
+	int i = r * width_in + c;
 
-	if (r < width && c < height){
-		float red = 0.0f;
-		float green = 0.0f;
-		float blue = 0.0f;
+	if (r < width_in && c < height_in){
 		for (int y = -padding; y <= padding; y++) {
             for (int x = -padding; x <= padding; x++) {
 				int currentX = x + c;
 				int currentY = y + r;
 
 				currentX = (currentX < 0) ? 0 : currentX;
-				currentX = (currentX > (width - 1)) ? (width - 1) : currentX;
+				currentX = (currentX > (width_in - 1)) ? (width_in - 1) : currentX;
 				currentY = (currentY < 0) ? 0 : currentY;
-				currentY = (currentY > (height - 1)) ? (height - 1) : currentY;
+				currentY = (currentY > (height_in - 1)) ? (height_in - 1) : currentY;
 						
-				int filterIdx = (y + padding) * filterWidth + x + padding;
-				int pixelIdx = currentY * width + currentX;
+				int filterIdx = (y + padding) * width_kernel + x + padding;
+				int pixelIdx = currentY * width_in + currentX;
 
-				red += filter[filterIdx] * inPixels[pixelIdx].x;
-				green += filter[filterIdx] * inPixels[pixelIdx].y;
-				blue += filter[filterIdx] * inPixels[pixelIdx].z;
+				outPixels[i] += weight_kernel[filterIdx] * inPixels[pixelIdx];
         	}
         }
-		outPixels[i].x = red;
-		outPixels[i].y = green;
-		outPixels[i].z = blue;
 	}
 }
