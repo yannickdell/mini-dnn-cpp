@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include "../src/layer/conv.h"
 
 // CUDA kernel for adding elements of two arrays
 __global__ void add(int n, int *x, int *y) {
