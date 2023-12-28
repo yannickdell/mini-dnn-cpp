@@ -20,50 +20,50 @@ void Conv::init() {
 // im2col, used for bottom
 // image size: Vector (height_in * width_in * channel_in)
 // data_col size: Matrix (hw_out, hw_kernel * channel_in)
-void Conv::im2col(const Vector& image, Matrix& data_col) {
-  int hw_in = height_in * width_in;
-  int hw_kernel = height_kernel * width_kernel;
-  int hw_out = height_out * width_out;
-  // im2col
-  data_col.resize(hw_out, hw_kernel * channel_in);
-  for (int c = 0; c < channel_in; c ++) {
-    Vector map = image.block(hw_in * c, 0, hw_in, 1);  // c-th channel map
-    for (int i = 0; i < hw_out; i ++) {
-      int step_h = i / width_out;
-      int step_w = i % width_out;
-      int start_idx = step_h * width_in * stride + step_w * stride;  // left-top idx of window
-      for (int j = 0; j < hw_kernel; j ++) {
-        int cur_col = start_idx % width_in + j % width_kernel - pad_w;  // col after padding
-        int cur_row = start_idx / width_in + j / width_kernel - pad_h;
-        if (cur_col < 0 || cur_col >= width_in || cur_row < 0 ||
-            cur_row >= height_in) {
-          data_col(i, c * hw_kernel + j) = 0;
-        }
-        else {
-          //int pick_idx = start_idx + (j / width_kernel) * width_in + j % width_kernel;
-          int pick_idx = cur_row * width_in + cur_col;
-          data_col(i, c * hw_kernel + j) = map(pick_idx);  // pick which pixel
-        }
-      }
-    }
-  }
-}
+// void Conv::im2col(const Vector& image, Matrix& data_col) {
+//   int hw_in = height_in * width_in;
+//   int hw_kernel = height_kernel * width_kernel;
+//   int hw_out = height_out * width_out;
+//   // im2col
+//   data_col.resize(hw_out, hw_kernel * channel_in);
+//   for (int c = 0; c < channel_in; c ++) {
+//     Vector map = image.block(hw_in * c, 0, hw_in, 1);  // c-th channel map
+//     for (int i = 0; i < hw_out; i ++) {
+//       int step_h = i / width_out;
+//       int step_w = i % width_out;
+//       int start_idx = step_h * width_in * stride + step_w * stride;  // left-top idx of window
+//       for (int j = 0; j < hw_kernel; j ++) {
+//         int cur_col = start_idx % width_in + j % width_kernel - pad_w;  // col after padding
+//         int cur_row = start_idx / width_in + j / width_kernel - pad_h;
+//         if (cur_col < 0 || cur_col >= width_in || cur_row < 0 ||
+//             cur_row >= height_in) {
+//           data_col(i, c * hw_kernel + j) = 0;
+//         }
+//         else {
+//           //int pick_idx = start_idx + (j / width_kernel) * width_in + j % width_kernel;
+//           int pick_idx = cur_row * width_in + cur_col;
+//           data_col(i, c * hw_kernel + j) = map(pick_idx);  // pick which pixel
+//         }
+//       }
+//     }
+//   }
+// }
 
-void Conv::forward(const Matrix& bottom) {
-  int n_sample = bottom.cols();
-  top.resize(height_out * width_out * channel_out, n_sample);
-  data_cols.resize(n_sample);
-  for (int i = 0; i < n_sample; i ++) {
-    // im2col
-    Matrix data_col;
-    im2col(bottom.col(i), data_col);
-    data_cols[i] = data_col;
-    // conv by product
-    Matrix result = data_col * weight;  // result: (hw_out, channel_out)
-    result.rowwise() += bias.transpose();
-    top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
-  }
-}
+// void Conv::forward(const Matrix& bottom) {
+//   int n_sample = bottom.cols();
+//   top.resize(height_out * width_out * channel_out, n_sample);
+//   data_cols.resize(n_sample);
+//   for (int i = 0; i < n_sample; i ++) {
+//     // im2col
+//     Matrix data_col;
+//     im2col(bottom.col(i), data_col);
+//     data_cols[i] = data_col;
+//     // conv by product
+//     Matrix result = data_col * weight;  // result: (hw_out, channel_out)
+//     result.rowwise() += bias.transpose();
+//     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+//   }
+// }
 
 // col2im, used for grad_bottom
 // data_col size: Matrix (hw_out, hw_kernel * channel_in)
