@@ -1,4 +1,6 @@
 #include "gpu_conv.h"
+
+
 void Conv::forward_gpu(const Matrix& bottom){
 
 }
@@ -23,7 +25,7 @@ __global__ void ConvKernel_v1(int * in, int width, int height,
                 currentY = (currentY < 0) ? 0 : currentY;
                 currentY = (currentY > (height - 1)) ? (height - 1) : currentY;
                         
-                int filterIdx = (y + padding) * filterWidth + x + padding;
+                int filterIdx = (y + padding) * kernel_width + x + padding;
                 int pixelIdx = currentY * width + currentX;
 
                 out[i] += kernel[filterIdx] * in[pixelIdx];
