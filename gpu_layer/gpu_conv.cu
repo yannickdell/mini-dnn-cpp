@@ -1,9 +1,8 @@
 #include "../../src/layer/conv.h"
 
-// Define the size of the shared memory. This should be chosen based on the architecture of your GPU.
 #define TILE_WIDTH 16
 
-__global__ void matMulKernel(float* A, float* B, float* C, int M, int N, int P) {
+__global__ void matMulKernel_v2(float* A, float* B, float* C, int M, int N, int P) {
   // Allocate shared memory
   __shared__ float As[TILE_WIDTH][TILE_WIDTH];
   __shared__ float Bs[TILE_WIDTH][TILE_WIDTH];
@@ -184,3 +183,16 @@ __global__ void ConvKernel_v1(int * in, int width, int height,
         }
     }
 }
+
+global void matMulKernel_v1(float* A, float* B, float* C, int M, int N, int P) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+  
+    if (row < M && col < P) {
+      float sum = 0;
+      for (int i = 0; i < N; i++) {
+        sum += A[row * N + i] * B[i * P + col];
+      }
+      C[row * P + col] = sum;
+    }
+  }
