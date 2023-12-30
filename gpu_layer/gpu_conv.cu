@@ -132,62 +132,206 @@ __global__ void matMulKernel_v2(float* A, float* B, float* C, int M, int N, int 
 // }
 
 // v3_ use stream
+// void Conv::forward(const Matrix& bottom){
+//   int n_sample = bottom.cols();
+//   top.resize(height_out * width_out * channel_out, n_sample);
+//   data_cols.resize(n_sample);
+  
+//   int nStreams = 10;
+//   cudaStream_t stream[nStreams];
+//   for (int i = 0; i < 10; i++) {
+//     cudaStreamCreate(&stream[i]);
+//   }
+
+//   for (int i = 0; i < n_sample; i ++) {
+//     // im2col
+//     Matrix data_col;
+//     im2col(bottom.col(i), data_col);
+//     data_cols[i] = data_col;
+
+//     float* data_col_array = data_col.data();
+//     float* weight_array = weight.data();
+//     float* result_array = new float[data_col.rows() * weight.cols()];
+
+//     // Allocate GPU memory
+//     float* d_data_col;
+//     float* d_weight;
+//     float* d_result;
+//     size_t nByte_data_col = data_col.size() * sizeof(float);
+//     size_t nByte_weight = weight.size() * sizeof(float);
+//     size_t nByte_result = data_col.rows() * weight.cols() * sizeof(float);
+//     CHECK(cudaMalloc(&d_data_col, nByte_data_col));
+//     CHECK(cudaMalloc(&d_weight, nByte_weight));
+//     CHECK(cudaMalloc(&d_result, nByte_result));
+
+//     // Copy data to GPU
+//     // CHECK(cudaMemcpyAsync(d_data_col, data_col_array, nByte_data_col, cudaMemcpyHostToDevice, stream1));
+//     // CHECK(cudaMemcpyAsync(d_weight, weight_array, nByte_weight, cudaMemcpyHostToDevice, stream2));
+
+//     // Call GPU kernel
+//     dim3 threadsPerBlock(32, 32);
+//     dim3 numBlocks((weight.cols() + threadsPerBlock.x - 1) / threadsPerBlock.x, (data_col.rows() + threadsPerBlock.y - 1) / threadsPerBlock.y);
+//     int smem_size = (threadsPerBlock.x + TILE_WIDTH - 1)*(threadsPerBlock.y + TILE_WIDTH - 1) * sizeof(float);
+//     // matMulKernel_v2<<<numBlocks, threadsPerBlock, smem_size>>>(d_data_col, d_weight, d_result, data_col.rows(), data_col.cols(), weight.cols());
+//     // cudaDeviceSynchronize();
+
+
+//     CHECK(cudaMemcpyAsync(d_data_col,data_col_array, nByte_data_col / nStreams, cudaMemcpyHostToDevice, stream[0]));
+//     CHECK(cudaMemcpyAsync(d_weight,weight_array, nByte_weight / nStreams, cudaMemcpyHostToDevice, stream[0]));
+//     matMulKernel_v2<<<numBlocks,threadsPerBlock,smem_size,stream[0]>>>(d_data_col, d_weight, d_result, 
+//                                                           data_col.rows()/nStreams, data_col.cols()/nStreams, weight.cols()/nStreams);
+// 		CHECK(cudaMemcpyAsync(result_array,d_result,nByte_result/2,cudaMemcpyDeviceToHost, stream[0]));
+    
+//     int start_data = data_col.size()/nStreams;
+// 		int len_data = data_col.size() - data_col.size()/nStreams;
+//     int start_weight = weight.size()/nStreams;
+// 		int len_weight = weight.size() - weight.size()/nStreams;
+//     int start_result = (data_col.rows() * weight.cols())/nStreams;
+//     int len_result = data_col.rows() * weight.cols() - (data_col.rows() * weight.cols())/nStreams;
+
+//     // int len = n/nStreams;
+//     // int start = len;
+//     for (int j = 1; j <nStreams ; j++){
+//       CHECK(cudaMemcpyAsync(&d_data_col[start_data],&data_col_array[start_data],len_data * sizeof(float),cudaMemcpyHostToDevice, stream[j]));
+//       CHECK(cudaMemcpyAsync(&d_weight[start_weight],&data_col_array[start_weight],len_weight * sizeof(float),cudaMemcpyHostToDevice, stream[j]));
+//       matMulKernel_v2<<<numBlocks,threadsPerBlock,smem_size,stream[j]>>>(&d_data_col[start_data], &d_weight[start_weight], &d_result[start_result], 
+//       data_col.rows()- data_col.rows()/nStreams, data_col.cols() - data_col.cols()/nStreams, len_weight);
+//       CHECK(cudaMemcpyAsync(&result_array[start_result],&d_result[start_result],len_result * sizeof(float),cudaMemcpyDeviceToHost, stream[j]));	
+//       start +=len;
+//       if ((j + 2 ) == nStreams)
+//         len_data = data_col.size() - data_col.size()/nStreams * (nStreams - 1);
+//         len_weight = weight.size() - data_col.size()/nStreams * (nStreams - 1);
+//         len_result = data_col.rows() * weight.cols() - (data_col.rows() * weight.cols())/nStreams * (nStreams - 1);
+//     }
+
+//     //Process first part
+// 		// CHECK(cudaMemcpyAsync(d_data_col,data_col_array, nByte_data_col / 2, cudaMemcpyHostToDevice, stream1));
+//     // CHECK(cudaMemcpyAsync(d_weight,weight_array, nByte_weight / 2, cudaMemcpyHostToDevice, stream1));
+//     // matMulKernel_v2<<<numBlocks,threadsPerBlock,smem_size,stream1>>>(d_data_col, d_weight, d_result, 
+//     //                                                       data_col.rows()/2, data_col.cols()/2, weight.cols()/2);
+// 		// CHECK(cudaMemcpyAsync(result_array,d_result,nByte_result/2,cudaMemcpyDeviceToHost, stream1));
+	
+// 		// //Process second part
+// 		// int start_data = data_col.size()/2;
+// 		// int len_data = data_col.size() - data_col.size()/2;
+//     // int start_weight = weight.size()/2;
+// 		// int len_weight = weight.size() - weight.size()/2;
+//     // int start_result = (data_col.rows() * weight.cols())/2;
+//     // int len_result = data_col.rows() * weight.cols() - (data_col.rows() * weight.cols())/2;
+// 		// CHECK(cudaMemcpyAsync(&d_data_col[start_data],&data_col_array[start_data],len_data * sizeof(float),cudaMemcpyHostToDevice, stream2));
+//     // CHECK(cudaMemcpyAsync(&d_weight[start_weight],&data_col_array[start_weight],len_weight * sizeof(float),cudaMemcpyHostToDevice, stream2));
+//     // matMulKernel_v2<<<numBlocks,threadsPerBlock,smem_size,stream1>>>(d_data_col[start_data], d_weight[start_weight], d_result[start_result], 
+//     //   data_col.rows()- data_col.rows()/2, data_col.cols() - data_col.cols()/2, len_weight);
+// 		// CHECK(cudaMemcpyAsync(&result_array[start_result],&d_result[start_result],len_result * sizeof(float),cudaMemcpyDeviceToHost, stream2));	
+
+//     // Copy result back to CPU
+//     // CHECK(cudaMemcpy(result_array, d_result, result_size, cudaMemcpyDeviceToHost));
+
+//     // Convert result array back to Eigen matrix
+//     Matrix result = Eigen::Map<Matrix>(result_array, data_col.rows(), weight.cols());
+
+//     result.rowwise() += bias.transpose();
+//     top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+
+//     // Free GPU memory
+//     CHECK(cudaFree(d_data_col));
+//     CHECK(cudaFree(d_weight));
+//     CHECK(cudaFree(d_result));
+
+//     // Delete result array
+//     delete[] result_array;
+//   }
+
+//   for (int i = 0; i < nStreams; i++) {
+//     CHECK(cudaStreamSynchronize(stream[i]));
+//     cudaStreamDestroy(stream[i]);
+//   }
+// }
+// use_stream v2
 void Conv::forward(const Matrix& bottom){
   int n_sample = bottom.cols();
   top.resize(height_out * width_out * channel_out, n_sample);
   data_cols.resize(n_sample);
-
-  cudaStream_t stream1, stream2;
-  CHECK(cudaStreamCreate(&stream1));
-  CHECK(cudaStreamCreate(&stream2));
-
-  for (int i = 0; i < n_sample; i ++) {
-    // im2col
-    Matrix data_col;
-    im2col(bottom.col(i), data_col);
-    data_cols[i] = data_col;
-
-    float* data_col_array = data_col.data();
-    float* weight_array = weight.data();
-    float* result_array = new float[data_col.rows() * weight.cols()];
-
-    // Allocate GPU memory
-    float* d_data_col;
-    float* d_weight;
-    float* d_result;
-    CHECK(cudaMalloc(&d_data_col, data_col.size() * sizeof(float)));
-    CHECK(cudaMalloc(&d_weight, weight.size() * sizeof(float)));
-    CHECK(cudaMalloc(&d_result, data_col.rows() * weight.cols() * sizeof(float)));
-
-    // Copy data to GPU
-    CHECK(cudaMemcpyAsync(d_data_col, data_col_array, data_col.size() * sizeof(float), cudaMemcpyHostToDevice, stream1));
-    CHECK(cudaMemcpyAsync(d_weight, weight_array, weight.size() * sizeof(float), cudaMemcpyHostToDevice, stream2));
-
-    // Call GPU kernel
-    dim3 threadsPerBlock(32, 32);
-    dim3 numBlocks((weight.cols() + threadsPerBlock.x - 1) / threadsPerBlock.x, (data_col.rows() + threadsPerBlock.y - 1) / threadsPerBlock.y);
-    int smem_size = (threadsPerBlock.x + TILE_WIDTH - 1)*(threadsPerBlock.y + TILE_WIDTH - 1) * sizeof(float);
-    matMulKernel_v2<<<numBlocks, threadsPerBlock, smem_size>>>(d_data_col, d_weight, d_result, data_col.rows(), data_col.cols(), weight.cols());
-    cudaDeviceSynchronize();
-
-    // Copy result back to CPU
-    CHECK(cudaMemcpy(result_array, d_result, data_col.rows() * weight.cols() * sizeof(float), cudaMemcpyDeviceToHost));
-
-    // Convert result array back to Eigen matrix
-    Matrix result = Eigen::Map<Matrix>(result_array, data_col.rows(), weight.cols());
-
-    result.rowwise() += bias.transpose();
-    top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
-
-    // Free GPU memory
-    CHECK(cudaFree(d_data_col));
-    CHECK(cudaFree(d_weight));
-    CHECK(cudaFree(d_result));
-
-    // Delete result array
-    delete[] result_array;
+  
+  int nStreams = 10;
+  cudaStream_t stream[nStreams];
+  for (int i = 0; i < nStreams; i++) {
+      cudaStreamCreate(&stream[i]);
   }
 
-  CHECK(cudaStreamDestroy(stream1));
-  CHECK(cudaStreamDestroy(stream2));
+  for (int i = 0; i < n_sample; i ++) {
+      // im2col
+      Matrix data_col;
+      im2col(bottom.col(i), data_col);
+      data_cols[i] = data_col;
+
+      float* data_col_array = data_col.data();
+      float* weight_array = weight.data();
+      float* result_array = new float[data_col.rows() * weight.cols()];
+
+      // Allocate GPU memory
+      float* d_data_col;
+      float* d_weight;
+      float* d_result;
+      size_t nByte_data_col = data_col.size() * sizeof(float);
+      size_t nByte_weight = weight.size() * sizeof(float);
+      size_t nByte_result = data_col.rows() * weight.cols() * sizeof(float);
+      CHECK(cudaMalloc(&d_data_col, nByte_data_col));
+      CHECK(cudaMalloc(&d_weight, nByte_weight));
+      CHECK(cudaMalloc(&d_result, nByte_result));
+
+      // Call GPU kernel
+      dim3 threadsPerBlock(32, 32);
+      dim3 numBlocks((weight.cols() + threadsPerBlock.x - 1) / threadsPerBlock.x, (data_col.rows() + threadsPerBlock.y - 1) / threadsPerBlock.y);
+      int smem_size = (threadsPerBlock.x + TILE_WIDTH - 1)*(threadsPerBlock.y + TILE_WIDTH - 1) * sizeof(float);
+
+      for (int j = 0; j < nStreams; j++){
+          // Start from different points in the data_col_array and weight_array for each stream
+          int start_data = j * data_col.size()/nStreams;
+          int start_weight = j * weight.size()/nStreams;
+          int start_result = j * (data_col.rows() * weight.cols())/nStreams;
+
+          // Calculate the length of data for each stream
+          int len_data = data_col.size()/nStreams;
+          int len_weight = weight.size()/nStreams;
+          int len_result = (data_col.rows() * weight.cols())/nStreams;
+
+          // If it's the last stream, adjust the length to include the remaining data
+          if (j == nStreams - 1) {
+              len_data = data_col.size() - start_data;
+              len_weight = weight.size() - start_weight;
+              len_result = (data_col.rows() * weight.cols()) - start_result;
+          }
+
+          // Copy data to GPU
+          CHECK(cudaMemcpyAsync(&d_data_col[start_data],&data_col_array[start_data],len_data * sizeof(float),cudaMemcpyHostToDevice, stream[j]));
+          CHECK(cudaMemcpyAsync(&d_weight[start_weight],&weight_array[start_weight],len_weight * sizeof(float),cudaMemcpyHostToDevice, stream[j]));
+
+          // Call GPU kernel
+          matMulKernel_v2<<<numBlocks,threadsPerBlock,smem_size,stream[j]>>>(&d_data_col[start_data], &d_weight[start_weight], &d_result[start_result], 
+          data_col.rows()/nStreams, data_col.cols()/nStreams, weight.cols()/nStreams);
+
+          // Copy result back to CPU
+          CHECK(cudaMemcpyAsync(&result_array[start_result],&d_result[start_result],len_result * sizeof(float),cudaMemcpyDeviceToHost, stream[j]));    
+      }
+
+      // Convert result array back to Eigen matrix
+      Matrix result = Eigen::Map<Matrix>(result_array, data_col.rows(), weight.cols());
+
+      result.rowwise() += bias.transpose();
+      top.col(i) = Eigen::Map<Vector>(result.data(), result.size());
+
+      // Free GPU memory
+      CHECK(cudaFree(d_data_col));
+      CHECK(cudaFree(d_weight));
+      CHECK(cudaFree(d_result));
+
+      // Delete result array
+      delete[] result_array;
+  }
+
+  for (int i = 0; i < nStreams; i++) {
+      CHECK(cudaStreamSynchronize(stream[i]));
+      cudaStreamDestroy(stream[i]);
+  }
 }
