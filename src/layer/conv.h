@@ -41,7 +41,6 @@ class Conv: public Layer {
        width_kernel(width_kernel), stride(stride), pad_w(pad_w), pad_h(pad_h)
   { init(); }
 
-  void forward_gpu(const Matrix& bottom);
   void forward(const Matrix& bottom);
   void backward(const Matrix& bottom, const Matrix& grad_top);
   void update(Optimizer& opt);

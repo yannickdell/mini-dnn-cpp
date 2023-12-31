@@ -227,7 +227,7 @@ void Conv::forward(const Matrix& bottom){
 //   top.resize(height_out * width_out * channel_out, n_sample);
 //   data_cols.resize(n_sample);
   
-//   int nStreams = 10;
+//   int nStreams = 8;
 //   cudaStream_t stream[nStreams];
 //   for (int i = 0; i < nStreams; i++) {
 //       cudaStreamCreate(&stream[i]);
