@@ -175,14 +175,14 @@ void Conv::forward(const Matrix& bottom){
     // cudaDeviceSynchronize();
 
     // Process first part
-    int len_data_first = nByte_data_col / 2;
-    int len_weight_first = nByte_weight / 2;
-    int len_result_first = nByte_result / 2;
-    CHECK(cudaMemcpyAsync(d_data_col, data_col_array, len_data_first, cudaMemcpyHostToDevice, stream1));
-    CHECK(cudaMemcpyAsync(d_weight, weight_array, len_weight_first, cudaMemcpyHostToDevice, stream1));
-    matMulKernel_v2<<<numBlocks, threadsPerBlock, smem_size, stream1>>>(d_data_col, d_weight, d_result, 
+    int len_data_first = data_col.size() / 2;
+    int len_weight_first = weight.size() / 2;
+    int len_result_first = (data_col.rows() * weight.cols()) / 2;
+    CHECK(cudaMemcpyAsync(&d_data_col[0], &data_col_array[0], len_data_first * sizeof(float), cudaMemcpyHostToDevice, stream1));
+    CHECK(cudaMemcpyAsync(&d_weight[0], &weight_array[0], len_weight_first * sizeof(float), cudaMemcpyHostToDevice, stream1));
+    matMulKernel_v2<<<numBlocks, threadsPerBlock, smem_size, stream1>>>(&d_data_col[0], &d_weight[0], &d_result[0], 
         data_col.rows() / 2, data_col.cols() / 2, weight.cols() / 2);
-    CHECK(cudaMemcpyAsync(result_array, d_result, len_result_first, cudaMemcpyDeviceToHost, stream1));
+    CHECK(cudaMemcpyAsync(&result_array[0], &d_result[0], len_result_first * sizeof(float), cudaMemcpyDeviceToHost, stream1));
 
     // Process second part
     int start_data_second = data_col.size() / 2;
@@ -193,10 +193,11 @@ void Conv::forward(const Matrix& bottom){
     int len_result_second = (data_col.rows() * weight.cols()) - start_result_second;
     CHECK(cudaMemcpyAsync(&d_data_col[start_data_second], &data_col_array[start_data_second], len_data_second * sizeof(float), cudaMemcpyHostToDevice, stream2));
     CHECK(cudaMemcpyAsync(&d_weight[start_weight_second], &weight_array[start_weight_second], len_weight_second * sizeof(float), cudaMemcpyHostToDevice, stream2));
-    dim3 numBlocks_second((len_weight_second + threadsPerBlock.x - 1) / threadsPerBlock.x, (len_data_second + threadsPerBlock.y - 1) / threadsPerBlock.y);
-    matMulKernel_v2<<<numBlocks_second, threadsPerBlock, smem_size, stream2>>>(&d_data_col[start_data_second], &d_weight[start_weight_second], &d_result[start_result_second], 
-        data_col.rows() / 2, data_col.cols() / 2, weight.cols() / 2);
+    matMulKernel_v2<<<numBlocks, threadsPerBlock, smem_size, stream2>>>(&d_data_col[start_data_second], 
+        &d_weight[start_weight_second], &d_result[start_result_second], 
+        data_col.rows() - data_col.rows() / 2, data_col.cols() - data_col.cols() / 2, weight.cols() - weight.cols() / 2);
     CHECK(cudaMemcpyAsync(&result_array[start_result_second], &d_result[start_result_second], len_result_second * sizeof(float), cudaMemcpyDeviceToHost, stream2));
+    
     cudaDeviceSynchronize();
 
     // Copy result back to CPU
@@ -218,7 +219,6 @@ void Conv::forward(const Matrix& bottom){
   }
   cudaStreamDestroy(stream1);
   cudaStreamDestroy(stream2);
-
 }
 
 // use_stream v2
